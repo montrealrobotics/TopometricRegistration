@@ -89,3 +89,16 @@ if __name__ == '__main__':
 
 	plt.scatter([x for (x,y,z) in road], [z for (x,y,z) in road])
 	plt.show()
+
+	roadFile = open('road.txt', 'w')
+	for (x, y, z) in road:
+		roadFile.write(str(x) + ' ' + str(y) + ' ' + str(z) + '\n')
+	roadFile.close()
+	# np.savetxt('graph.txt')
+
+	osmFile = open('osm.txt', 'w')
+	for node, edgeList in graph.items():
+		for edge, tf in edgeList.items():
+			osmFile.write(node + ' ' + ' ' + edge + ' ' + str(tf[0]) + ' ' + str(tf[1]) + ' ' + str(tf[2]) + '\n')
+		# osmFile.write(str(item) + '\n')
+	osmFile.close()
