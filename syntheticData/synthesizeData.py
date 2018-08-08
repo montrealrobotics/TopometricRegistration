@@ -3,6 +3,7 @@ Python script for synthesizing data for synthetic OSM and local sensor frame vie
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
@@ -15,8 +16,8 @@ if __name__ == '__main__':
 	# Think of the intersection as a 'Y', where the vertical line in the bottom-half of the Y
 	# represents the main branch, and the slanted lines in the top-half of the Y represent 
 	# the left and right branches.
-	nodes = [10, 15, 20]
-	# nodes = [1, 2, 3]
+	# nodes = [10, 15, 20]
+	nodes = [10, 5, 5]
 
 	# Generate keys for the dictionary that's going to hold the graph
 	keys = ['M'+str(i).zfill(2) for i in range(nodes[0])] + \
@@ -68,19 +69,23 @@ if __name__ == '__main__':
 	# X and Z offsets (corner of the farther point of the left turn intersecting with the projected
 	# right edge of the main branch)
 	tmpX = xleft + roadWidth * np.sin(leftAngle)
-	tmpZ = zleft + roadWidth * np.cos(leftAngle)
+	tmpZ = zleft + roadWidth + roadWidth * np.cos(leftAngle)
 	for i in range(numLeft):
 		mag = deltaZ * i
-		road.append((tmpX - mag*np.cos(leftAngle), camHeight, mag*np.sin(leftAngle)))
+		road.append((tmpX - mag*np.cos(leftAngle), camHeight, tmpZ + mag*np.sin(leftAngle)))
 	# Number of points to be sampled along the right branch
 	numRight = int(np.floor(nodes[2]*avgNodeSpacing))
 	deltaZ = nodes[2]
 	for i in range(numRight):
 		mag = deltaZ * i
-		road.append((xleft + mag*np.cos(rightAngle), camHeight, zleft + mag*np.sin(leftAngle)))
+		road.append((xleft + roadWidth + mag*np.cos(rightAngle), camHeight, zleft + mag*np.sin(leftAngle)))
 	# Sample points along the farther edge of the right branch
-	tmpX = xleft + roadWidth + roadWidth*np.sin(rightAngle)
+	tmpX = xleft + roadWidth - roadWidth*np.sin(rightAngle)
 	tmpZ = zleft + roadWidth * np.cos(rightAngle)
 	for i in range(numRight):
 		mag = deltaZ * i
-		road.append((tmpX + mag*np.cos(rightAngle), camHeight, zleft + mag*np.sin(rightAngle)))
+		road.append((tmpX + mag*np.cos(rightAngle), camHeight, tmpZ + mag*np.sin(rightAngle)))
+
+
+	plt.scatter([x for (x,y,z) in road], [z for (x,y,z) in road])
+	plt.show()
