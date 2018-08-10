@@ -4,7 +4,7 @@ import operator
 import csv
 
 
-def sample(x, mu, stddev=0.):
+def sample(x, mu, stddev=0.01):
     return x + np.random.normal(mu, stddev)
 
 def generate_turn(info, laser_res, osm_res, road_width, last_osm, idx, left=True):
@@ -16,6 +16,7 @@ def generate_turn(info, laser_res, osm_res, road_width, last_osm, idx, left=True
     osm = []
     osm_connectivity = []
 
+    # Add road points
     while abs(cur_x) < info['dist']:
         if left:
             l_sample = sample(cur_x, mu=0.01, stddev=0.05) * info['slope'] + info['start']
@@ -35,6 +36,7 @@ def generate_turn(info, laser_res, osm_res, road_width, last_osm, idx, left=True
 
             cur_x += laser_res * np.abs(np.random.normal(laser_res))
 
+    # Add OSM information
     while abs(cur_osm_x) < info['dist']:
         if left:
             osm_sample = sample(cur_osm_x, mu=0.01, stddev=0.01) * info['slope'] + info['start'] + road_width / 2
@@ -57,18 +59,22 @@ def generate_turn(info, laser_res, osm_res, road_width, last_osm, idx, left=True
 
 
 def generate_graph(road_info):
+    # Constants
     laser_res = 0.01
     osm_res = 0.5 
     road_width = 1.0
 
+    # Current z coordinates
     cur_l_z = 0
     cur_r_z = 0
     cur_osm_z = 0
 
+    # Indices to keep track of 
     M = 1
     R = 0
     L = 0
 
+    # Items of interest
     laser_points = []
     osm_points = []
     osm_connectivity = []
@@ -78,6 +84,8 @@ def generate_graph(road_info):
     last_osm = 'M00'
 
     for info in road_info:
+
+        # Add OSM Nodes 
         while cur_osm_z < info['start']:
             sample_z = sample(cur_osm_z, mu=osm_res)
             cur_osm = 'M{}'.format(str(M).zfill(2))
@@ -90,27 +98,31 @@ def generate_graph(road_info):
             M += 1
             last_osm = cur_osm
 
+        # If the first item is a left turn
         if info['turn'] == 'left':
+            # Add straight road points until we hit the start of the turn
             while cur_l_z < info['start']:
                 sample_z = sample(cur_l_z, mu=0.01, stddev=0.005)
 
                 if sample_z < info['start']:
-                    laser_points.append((0, sample_z))
+                    laser_points.append((sample(0, laser_res), sample_z))
                 
                 cur_l_z = sample_z
             
+            # Generate the points and OSM information for the turn 
             points, osm, osm_connects, L = generate_turn(info, laser_res, osm_res, road_width, last_osm, L)
             cur_l_z = info['start'] + road_width
 
         else:
+            # Add straight road points until we hit the start of the turn
             while cur_r_z < info['start']:
                 sample_z = sample(cur_r_z, mu=0.01, stddev=0.005)
 
                 if sample_z < info['start']:
-                    laser_points.append((road_width, sample_z))
+                    laser_points.append((sample(road_width, laser_res), sample_z))
 
                 cur_r_z = sample_z
-                    
+            # Generate the points and OSM information for the turn 
             points, osm, osm_connects, R = generate_turn(info, laser_res, osm_res, road_width, last_osm, R, left=False)
             cur_r_z = info['start'] + road_width
 
@@ -118,11 +130,12 @@ def generate_graph(road_info):
         osm_points += osm
         osm_connectivity += osm_connects
 
+    # For competeness sake, make sure both parts of the straight road end at the same place
     if cur_l_z < cur_r_z:
         while cur_l_z < cur_r_z:
             sample_z = sample(cur_l_z, mu=0.01, stddev=0.005)
             if sample_z < cur_r_z:
-                laser_points.append((0, sample_z))
+                laser_points.append((sample(0, laser_res), sample_z))
 
             cur_l_z = sample_z
     else:
@@ -130,12 +143,13 @@ def generate_graph(road_info):
             sample_z = sample(cur_r_z, mu=0.01, stddev=0.005)
 
             if sample_z < cur_l_z:
-                laser_points.append((road_width, sample_z))
+                laser_points.append((sample(road_width, laser_res), sample_z))
 
             cur_r_z = sample_z
 
     osm_points_plot = [o[1:] for o in osm_points]
 
+    # Gather required information
     with open('osm_connectivity.csv', 'w') as f:
         file_writer = csv.writer(f)
         for i in range(len(osm_connectivity)):
@@ -151,10 +165,10 @@ def generate_graph(road_info):
         for i in range(len(osm_points)):
             file_writer.writerow(osm_points[i])
 
+    # Plot the points we've generated
     plt.scatter(*zip(*laser_points))
     plt.scatter(*zip(*osm_points_plot))
     plt.show()
-
 
 
 if __name__ == '__main__':
@@ -176,6 +190,13 @@ if __name__ == '__main__':
             'slope': 0.5, 
             'dist': 1,
             'turn': 'left'
+        },
+
+        {
+            'start': 7.0, 
+            'slope': 0.5, 
+            'dist': 1,
+            'turn': 'right'
         }
     ]
 
