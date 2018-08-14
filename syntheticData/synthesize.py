@@ -12,8 +12,13 @@ def generate_turn(info, laser_res, osm_res, road_width, last_osm, idx, left=True
     cur_osm_x = 0
     cur_osm = None
 
+    # Laser scan points
     points = []
+
+    # OSM Nodes
     osm = []
+
+    # OSM Connectivity
     osm_connectivity = []
 
     # Add road points
