@@ -26,7 +26,7 @@ int main(int argc, char** argv){
 	const char *filename_road;
 	const char *filename_output;
 
-	filename_osm = "../data/osm_nodes.txt";
+	filename_osm = "../data/osm_nodes_noisy.txt";
 	filename_road = "../data/road.txt";
 	filename_output = "../data/output.txt";
 
@@ -70,7 +70,7 @@ int main(int argc, char** argv){
 			// problem.AddResidualBlock(distanceError2D, new ceres::HuberLoss(1), osm + 2*j);
 			ceres::CostFunction *distanceError2D = new ceres::AutoDiffCostFunction<DistanceError2D, 2, 2>(
 				new DistanceError2D(road + 2*i, osm + 2*j));
-			problem.AddResidualBlock(distanceError2D, new ceres::HuberLoss(1.0), trans);
+			problem.AddResidualBlock(distanceError2D, new ceres::HuberLoss(0.7), trans);
 		}
 	}
 
