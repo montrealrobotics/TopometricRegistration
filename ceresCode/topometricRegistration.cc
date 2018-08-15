@@ -42,6 +42,10 @@ int main(int argc, char** argv){
 	double *osm = topometricRegistrationProblem.getOSM();
 	double *road = topometricRegistrationProblem.getRoad();
 
+	// Variable to hold the translation vector (translation to be applied to each point
+	// on the OSM)
+	double trans[2] = {0.000001, 0.000001};
+
 	// Printing out data, for verification
 	std::cout << "Num OSM: " << num_osm << std::endl;
 	std::cout << "Num road: " << num_road << std::endl;
@@ -61,9 +65,12 @@ int main(int argc, char** argv){
 		// ceres::CostFunction *distanceError2D = new ceres::AutoDiffCostFunction<DistanceError2D, 2, 2>(
 		// 	new DistanceError2D(road + 2*i));
 		for(int j = 0; j < num_osm; ++j){
+			// ceres::CostFunction *distanceError2D = new ceres::AutoDiffCostFunction<DistanceError2D, 2, 2>(
+			// new DistanceError2D(road + 2*i));
+			// problem.AddResidualBlock(distanceError2D, new ceres::HuberLoss(1), osm + 2*j);
 			ceres::CostFunction *distanceError2D = new ceres::AutoDiffCostFunction<DistanceError2D, 2, 2>(
-			new DistanceError2D(road + 2*i));
-			problem.AddResidualBlock(distanceError2D, new ceres::HuberLoss(1), osm + 2*j);
+				new DistanceError2D(road + 2*i, osm + 2*j));
+			problem.AddResidualBlock(distanceError2D, new ceres::HuberLoss(1.0), trans);
 		}
 	}
 
@@ -84,12 +91,15 @@ int main(int argc, char** argv){
 	std::cout << summary.FullReport() << std::endl;
 
 
+	// Print estimate
+	std::cout << "Translation: " << trans[0] << " " << trans[1] << std::endl;
+
 	// Open an output stream, to write the result to file
 	std::ofstream outFile;
 	outFile.open(filename_output);
 	outFile << num_osm << std::endl;
 	for(int i = 0; i < num_osm; ++i){
-		outFile << osm[2*i] << " " << osm[2*i + 1] << std::endl;
+		outFile << osm[2*i] + trans[0] << " " << osm[2*i + 1] + trans[1] << std::endl;
 	}
 
 

@@ -12,4 +12,35 @@ for line in file_osm:
 	else:
 		curLine = line.strip().split()
 		osm.append((float(curLine[0]), float(curLine[1])))
-print(osm)
+# print(len(osm))
+
+file_road = open('road.txt').readlines()
+road = []
+i = 0
+for line in file_road:
+	if i == 0:
+		i = 1
+		pass
+	else:
+		curLine = line.strip().split()
+		road.append((float(curLine[0]), float(curLine[1])))
+# print(len(road))
+
+file_output = open('output.txt').readlines()
+output = []
+i = 0
+for line in file_output:
+	if i == 0:
+		i = 1
+		pass
+	else:
+		curLine = line.strip().split()
+		output.append((float(curLine[0]), float(curLine[1])))
+# print(len(output))
+
+print(len(road))
+fig, ax = plt.subplots()
+ax.scatter([i for (i,j) in road], [j for (i,j) in road], s = 1, facecolor = 'blue')
+ax.scatter([i for (i,j) in osm], [j for (i,j) in osm], s = 1, facecolor = 'green')
+ax.scatter([i for (i,j) in output], [j for (i,j) in output], s = 1, facecolor = 'red')
+plt.show()
