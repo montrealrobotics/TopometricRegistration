@@ -37,7 +37,7 @@ scan = df.iloc[0]['scan_utm']
 
 def transform_devens(x):
     devens_new = np.zeros(((len(list(devens.exterior.coords))), 2))
-    for i in range(len(list(devens.exterior.coords))):
+    for i in range(devens_arr.shape[0]):
         x_dash = x[0] * devens_arr[i,0] + x[1] * devens_arr[i,1] + x[4]
         y_dash = x[2] * devens_arr[i,0] + x[1] * devens_arr[i,1] + x[5]
         z_dash = 1 + x[6]
@@ -60,7 +60,7 @@ def find_closest(x_new, y_new):
 
 def cost_func(x):
     my_cost = 0
-    for i in range(len(list(devens.exterior.coords))):
+    for i in range(devens_arr.shape[0]):
         x_dash = x[0] * devens_arr[i,0] + x[1] * devens_arr[i,1] + x[4]
         y_dash = x[2] * devens_arr[i,0] + x[1] * devens_arr[i,1] + x[5]
         z_dash = 1 + x[6]
@@ -68,7 +68,15 @@ def cost_func(x):
         y_new = y_dash / z_dash
 
         my_cost = my_cost + find_closest(x_new, y_new)
-        return my_cost
+    return my_cost
+
+def cost_func_2d(x):
+    my_cost = 0
+    for i in range(devens_arr.shape[0]):
+        x_new = np.cos(x[0]) * devens_arr[i,0] + np.sin(x[0]) * devens_arr[i,1] + x[1]
+        y_new = -np.sin(x[0]) * devens_arr[i,0] + np.cos(x[0]) * devens_arr[i,1] + x[2]
+        my_cost = my_cost + find_closest(x_new, y_new)
+    return my_cost
 
 devens_exterior = np.asarray(devens.exterior.coords[:])
 devens_interior = []
@@ -76,6 +84,7 @@ for interior in devens.interiors:
     devens_interior += interior.coords[:]
 devens_interior = np.asarray(devens_interior)
 devens_arr = np.concatenate((devens_exterior, devens_interior), axis = 0)
+#print(devens_arr.shape)
 
 #print(devens.exterior.coords[1,0])
 x0 = np.array([0.5, 0.1, 0.1, 0.5, 1.0, 0.8, 1.2])
