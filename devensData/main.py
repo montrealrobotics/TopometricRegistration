@@ -17,18 +17,25 @@ i = 0
 for row in nodes.iterrows():
     G.add_node(i, x=row[1][0], y=row[1][1])
     i = i+1
+
 xs = nx.get_node_attributes(G, 'x')
-print(xs[0])
+ys = nx.get_node_attributes(G, 'y')
+#print(xs[0])
 G.add_edges_from(edges)
 scan = df.iloc[0]['scan_utm']
+#print(len(devens.exterior))
+#print(devens.area)
+#print(devens.bounds)
+#print(len(list(devens.exterior.coords)))
+#print(devens.interiors.coords) #not existant
 
 
-plot_coords = lambda obj: plt.plot(obj.xy[0],obj.xy[1], 'k')
-plot_coords(devens.exterior)
-[plot_coords(x) for x in devens.interiors]
-print "Is the origin on the road? {}".format(devens.contains(geo.Point([0,0])))
-plt.plot(0,0,'gx')
-plt.show()
+#plot_coords = lambda obj: plt.plot(obj.xy[0],obj.xy[1], 'k')
+#plot_coords(devens.exterior)
+#[plot_coords(x) for x in devens.interiors]
+#print "Is the origin on the road? {}".format(devens.contains(geo.Point([0,0])))
+#plt.plot(0,0,'gx')
+#plt.show()
 
-nx.draw(G, pos=nodes)
-plt.show()
+#nx.draw(G, pos=nodes)
+#plt.show()
