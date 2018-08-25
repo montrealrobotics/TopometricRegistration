@@ -32,8 +32,21 @@ scan = df.iloc[0]['scan_utm']
 #print(len(list(devens.exterior.coords)))
 #print(devens.exterior.coords.size())
 #print(devens.interiors.coords) #not existant
-devens_arr = np.asarray(list(devens.exterior.coords))
+#devens_arr = np.asarray(list(devens.exterior.coords))
 #print(devens_arr[100,1])
+
+def transform_devens(x):
+    devens_new = np.zeros(((len(list(devens.exterior.coords))), 2))
+    for i in range(len(list(devens.exterior.coords))):
+        x_dash = x[0] * devens_arr[i,0] + x[1] * devens_arr[i,1] + x[4]
+        y_dash = x[2] * devens_arr[i,0] + x[1] * devens_arr[i,1] + x[5]
+        z_dash = 1 + x[6]
+
+        devens_new[i,0] = x_dash / z_dash
+        devens_new[i,1] = y_dash / z_dash
+
+    return devens_new
+
 
 
 def find_closest(x_new, y_new):
@@ -57,14 +70,30 @@ def cost_func(x):
         my_cost = my_cost + find_closest(x_new, y_new)
         return my_cost
 
+devens_exterior = np.asarray(devens.exterior.coords[:])
+devens_interior = []
+for interior in devens.interiors:
+    devens_interior += interior.coords[:]
+devens_interior = np.asarray(devens_interior)
+devens_arr = np.concatenate((devens_exterior, devens_interior), axis = 0)
+
 #print(devens.exterior.coords[1,0])
 x0 = np.array([0.5, 0.1, 0.1, 0.5, 1.0, 0.8, 1.2])
 res = minimize(cost_func, x0, method='nelder-mead', options={'xtol':1e-8, 'disp':True})
 print(res.x)
+devens_trans = transform_devens(res.x)
+#print(devens_arr)
+print(devens_trans)
+#devens_arr = devens_arr.tolist()
+#plot_coords(devens_trans)
 
-
+plt.scatter(devens_arr[:,0], devens_arr[:,1])
+plt.show()
+plt.scatter(devens_trans[:,0], devens_trans[:,1])
+plt.show()
 #plot_coords = lambda obj: plt.plot(obj.xy[0],obj.xy[1], 'k')
 #plot_coords(devens.exterior)
+#plot_coords(devens_arr)
 #[plot_coords(x) for x in devens.interiors]
 #print "Is the origin on the road? {}".format(devens.contains(geo.Point([0,0])))
 #plt.plot(0,0,'gx')
