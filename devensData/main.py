@@ -27,6 +27,30 @@ ys = nx.get_node_attributes(G, 'y')
 #print(xs[0])
 G.add_edges_from(edges)
 scan = df.iloc[0]['scan_utm']
+pcl_scan = np.zeros((2, 3, 111360))
+#print(scan['x'].shape)
+pcl_coor = np.zeros((2,2))
+for i in range(2):
+    pcl_scan[i,0,:] = scan['x']
+    pcl_scan[i,1,:] = scan['y']
+    pcl_scan[i,2,:] = scan['z']
+    pcl_coor[i,:] = df.iloc[i]['x'], df.iloc[i]['y']
+#print(pcl_scan)
+#print(pcl_coor)
+
+count1 = 0
+count2 = 0
+road_pts = np.zeros((1000, 2))
+for i in range(111360):
+    if pcl_scan[0,1,i] < -2.5:
+        if count1 < 1000:
+            road_pts[count1, 0] = pcl_scan[0,0,i]
+            road_pts[count1, 1] = pcl_scan[0,2,i]
+        count1 = count1 + 1
+
+    if pcl_scan[0,1,i] < 0:
+        count2 = count2 + 1
+print(count1, count2)
 #print(len(devens.exterior))
 #print(devens.area)
 #print(devens.bounds)
@@ -84,9 +108,9 @@ def cost_func(x):
 
 def cost_func_2d(x):
     my_cost = 0
-    for i in range(devens_arr.shape[0]/10):
-        x_new = np.cos(x[0]) * devens_arr[i*10,0] + np.sin(x[0]) * devens_arr[i*10,1] + x[1]
-        y_new = -np.sin(x[0]) * devens_arr[i*10,0] + np.cos(x[0]) * devens_arr[i*10,1] + x[2]
+    for i in range(devens_arr.shape[0]/100):
+        x_new = np.cos(x[0]) * devens_arr[i*100,0] + np.sin(x[0]) * devens_arr[i*100,1] + x[1]
+        y_new = -np.sin(x[0]) * devens_arr[i*100,0] + np.cos(x[0]) * devens_arr[i*100,1] + x[2]
         my_cost = my_cost + find_closest(x_new, y_new)
     return my_cost
 
@@ -99,21 +123,26 @@ devens_arr = np.concatenate((devens_exterior, devens_interior), axis = 0)
 #bounds = Bounds(np.concatenate(devens_arr[:,0] - 10, devens_arr[:,1] - 10), np.concatenate(devens_arr[:,0] + 10, devens_arr[:,1] + 10))
 #print(devens_arr.shape)
 
+devens_arr = np.zeros((1000,2))
+devens_arr = road_pts
 #print(devens.exterior.coords[1,0])
 #x0 = np.array([0.5, 0.1, 0.1, 0.5, 1.0, 0.8, 1.2])
 x0 = np.array([0.1, 0.8, 1.2])
 res = minimize(cost_func_2d, x0, method='nelder-mead', options={'xtol':1e-8, 'disp':True})
 #res_bounded = minimize(cost_func_2d, x0, method='trust-constr', options={'verbose':1}, bounds=bounds)
-print(res.x)
+#print(res.x)
 devens_trans = transform_devens_2d(res.x)
 #print(devens_arr)
-print(devens_trans)
+#print(devens_trans)
 #devens_arr = devens_arr.tolist()
 #plot_coords(devens_trans)
 
-plt.scatter(devens_arr[:,0], devens_arr[:,1])
-plt.show()
+#plt.plot(scan['x'], scan['y'], '.', ms=1)
+#plt.scatter(devens_arr[:,0], devens_arr[:,1])
+#plt.show()
 plt.scatter(devens_trans[:,0], devens_trans[:,1])
+plt.show()
+plt.scatter(road_pts[:,0], road_pts[:,1])
 plt.show()
 #plot_coords = lambda obj: plt.plot(obj.xy[0],obj.xy[1], 'k')
 #plot_coords(devens.exterior)
