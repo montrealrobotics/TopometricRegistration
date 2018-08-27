@@ -10,4 +10,4 @@ The coordinate frame for the node location data is `(x,y)=(286273, 4711159)` in 
 
 Run the sample script `python draw_devens_map.py` for a visualization of the polygon, and an example of how to use it to test whether a point is on the road.
 
-Run the sammple script `python draw_graph_from_files.py` for an example of how to load the files into a [networkx](https://networkx.github.io/documentation/stable/reference/classes/graph.html) graph data structure and visualize it.
+Run the sample script `python draw_graph_from_files.py` for an example of how to load the files into a [networkx](https://networkx.github.io/documentation/stable/reference/classes/graph.html) graph data structure and visualize it.
