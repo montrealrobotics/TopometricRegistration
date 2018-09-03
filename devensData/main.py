@@ -11,9 +11,11 @@ from scipy.optimize import minimize
 
 #nodes = np.genfromtxt('devens_osm/osm_nodes.txt', delimiter=',')
 nodes = pd.read_csv('devens_osm/osm_nodes.txt', header=None)
+nodes2 = np.genfromtxt('devens_osm/osm_nodes.txt', delimiter=',')
 edges = np.genfromtxt('devens_osm/osm_edges.txt', delimiter=',', dtype=int)
 devens = pkl.load(open('devens_map/devens_map_poly.pkl', 'r'))
-df = pkl.load(open('pointclouds/scans_in_utm_small.pkl', 'r'))
+df = pkl.load(open('../scans_in_utm_annotated.pkl', 'r'))
+#print(df)
 
 G = nx.Graph()
 #G.add_nodes_from(range(len(nodes)))
@@ -27,38 +29,49 @@ ys = nx.get_node_attributes(G, 'y')
 #print(xs[0])
 G.add_edges_from(edges)
 scan = df.iloc[0]['scan_utm']
-pcl_scan = np.zeros((2, 3, 111360))
+#print(scan)
+is_road_true = df.iloc[0]['is_road_truth']
+print(is_road_true)
+pcl_scan = np.zeros((2, 3, 111168))
 #print(scan['x'].shape)
-pcl_coor = np.zeros((2,2))
+pcl_coor = np.zeros((5,2))
 for i in range(2):
     pcl_scan[i,0,:] = scan['x']
     pcl_scan[i,1,:] = scan['y']
     pcl_scan[i,2,:] = scan['z']
     pcl_coor[i,:] = df.iloc[i]['x'], df.iloc[i]['y']
-#print(pcl_scan)
-#print(pcl_coor)
+##print(pcl_scan)
+##print(pcl_coor)
 
 count1 = 0
 count2 = 0
-road_pts = np.zeros((1000, 2))
-for i in range(111360):
-    if pcl_scan[0,1,i] < -2.5:
-        if count1 < 1000:
+road_pts = np.zeros((25000, 2))
+for i in range(111168):
+    if is_road_true[i] == True:
+        #print("ok")
+        if count1 < 10000:
             road_pts[count1, 0] = pcl_scan[0,0,i]
-            road_pts[count1, 1] = pcl_scan[0,2,i]
+            road_pts[count1, 1] = pcl_scan[0,1,i]
         count1 = count1 + 1
-
-    if pcl_scan[0,1,i] < 0:
+    else:
         count2 = count2 + 1
+#    if pcl_scan[0,1,i] < -2.5:
+#        if count1 < 1000:
+#            road_pts[count1, 0] = pcl_scan[0,0,i]
+#            road_pts[count1, 1] = pcl_scan[0,2,i]
+#        count1 = count1 + 1
+
+#    if pcl_scan[0,1,i] < 0:
+#        count2 = count2 + 1
 print(count1, count2)
-#print(len(devens.exterior))
-#print(devens.area)
-#print(devens.bounds)
-#print(len(list(devens.exterior.coords)))
-#print(devens.exterior.coords.size())
-#print(devens.interiors.coords) #not existant
-#devens_arr = np.asarray(list(devens.exterior.coords))
-#print(devens_arr[100,1])
+##print(len(devens.exterior))
+##print(devens.area)
+##print(devens.bounds)
+##print(len(list(devens.exterior.coords)))
+##print(devens.exterior.coords.size())
+##print(devens.interiors.coords) #not existant
+##devens_arr = np.asarray(list(devens.exterior.coords))
+##print(devens_arr[100,1])
 
 def transform_devens(x):
     devens_new = np.zeros((devens_arr.shape[0], 2))
@@ -114,23 +127,28 @@ def cost_func_2d(x):
         my_cost = my_cost + find_closest(x_new, y_new)
     return my_cost
 
-devens_exterior = np.asarray(devens.exterior.coords[:])
-devens_interior = []
-for interior in devens.interiors:
-    devens_interior += interior.coords[:]
-devens_interior = np.asarray(devens_interior)
-devens_arr = np.concatenate((devens_exterior, devens_interior), axis = 0)
-#bounds = Bounds(np.concatenate(devens_arr[:,0] - 10, devens_arr[:,1] - 10), np.concatenate(devens_arr[:,0] + 10, devens_arr[:,1] + 10))
-#print(devens_arr.shape)
+##def deven_der(x):
 
-devens_arr = np.zeros((1000,2))
+
+#devens_exterior = np.asarray(devens.exterior.coords[:])
+#devens_interior = []
+#for interior in devens.interiors:
+#    devens_interior += interior.coords[:]
+#devens_interior = np.asarray(devens_interior)
+#devens_arr = np.concatenate((devens_exterior, devens_interior), axis = 0)
+##bounds = Bounds(np.concatenate(devens_arr[:,0] - 10, devens_arr[:,1] - 10), np.concatenate(devens_arr[:,0] + 10, devens_arr[:,1] + 10))
+##print(devens_arr.shape)
+
+devens_arr = np.zeros((25000,2))
 devens_arr = road_pts
 #print(devens.exterior.coords[1,0])
 #x0 = np.array([0.5, 0.1, 0.1, 0.5, 1.0, 0.8, 1.2])
 x0 = np.array([0.1, 0.8, 1.2])
-res = minimize(cost_func_2d, x0, method='nelder-mead', options={'xtol':1e-8, 'disp':True})
+#res = minimize(cost_func_2d, x0, method='nelder-mead', options={'xtol':1e-8, 'disp':True})
+res = minimize(cost_func_2d, x0, method='BFGS', options={'disp': True})
+#res = minimize(cost_func_2d, x0, method='trust-exact', options={'xtol':1e-8, 'disp': True})
 #res_bounded = minimize(cost_func_2d, x0, method='trust-constr', options={'verbose':1}, bounds=bounds)
-#print(res.x)
+print(res.x)
 devens_trans = transform_devens_2d(res.x)
 #print(devens_arr)
 #print(devens_trans)
@@ -140,17 +158,18 @@ devens_trans = transform_devens_2d(res.x)
 #plt.plot(scan['x'], scan['y'], '.', ms=1)
 #plt.scatter(devens_arr[:,0], devens_arr[:,1])
 #plt.show()
-plt.scatter(devens_trans[:,0], devens_trans[:,1])
-plt.show()
-plt.scatter(road_pts[:,0], road_pts[:,1])
-plt.show()
-#plot_coords = lambda obj: plt.plot(obj.xy[0],obj.xy[1], 'k')
-#plot_coords(devens.exterior)
-#plot_coords(devens_arr)
-#[plot_coords(x) for x in devens.interiors]
-#print "Is the origin on the road? {}".format(devens.contains(geo.Point([0,0])))
-#plt.plot(0,0,'gx')
+#nx.draw(G, pos=nodes2)
+plt.scatter(devens_trans[:,0], devens_trans[:,1], color = 'k')
 #plt.show()
+#plt.scatter(road_pts[:,0], road_pts[:,1])
+#plt.show()
+##plot_coords = lambda obj: plt.plot(obj.xy[0],obj.xy[1], 'k')
+##plot_coords(devens.exterior)
+##plot_coords(devens_arr)
+##[plot_coords(x) for x in devens.interiors]
+##print "Is the origin on the road? {}".format(devens.contains(geo.Point([0,0])))
+##plt.plot(0,0,'gx')
+##plt.show()
 
-#nx.draw(G, pos=nodes)
-#plt.show()
+nx.draw(G, pos=nodes2)
+plt.show()
