@@ -30,40 +30,14 @@ ys = nx.get_node_attributes(G, 'y')
 G.add_edges_from(edges)
 scan = df.iloc[0]['scan_utm']
 #print(scan)
-is_road_true = df.iloc[0]['is_road_truth']
+is_road_true = df.iloc[1]['is_road_truth']
 print(is_road_true)
-pcl_scan = np.zeros((2, 3, 111168))
+pcl_scan = np.zeros((5, 3, 111168))
 #print(scan['x'].shape)
 pcl_coor = np.zeros((5,2))
-for i in range(2):
-    pcl_scan[i,0,:] = scan['x']
-    pcl_scan[i,1,:] = scan['y']
-    pcl_scan[i,2,:] = scan['z']
-    pcl_coor[i,:] = df.iloc[i]['x'], df.iloc[i]['y']
-##print(pcl_scan)
-##print(pcl_coor)
 
-count1 = 0
-count2 = 0
-road_pts = np.zeros((25000, 2))
-for i in range(111168):
-    if is_road_true[i] == True:
-        #print("ok")
-        if count1 < 10000:
-            road_pts[count1, 0] = pcl_scan[0,0,i]
-            road_pts[count1, 1] = pcl_scan[0,1,i]
-        count1 = count1 + 1
-    else:
-        count2 = count2 + 1
-#    if pcl_scan[0,1,i] < -2.5:
-#        if count1 < 1000:
-#            road_pts[count1, 0] = pcl_scan[0,0,i]
-#            road_pts[count1, 1] = pcl_scan[0,2,i]
-#        count1 = count1 + 1
 
-#    if pcl_scan[0,1,i] < 0:
-#        count2 = count2 + 1
-print(count1, count2)
+
 ##print(len(devens.exterior))
 ##print(devens.area)
 ##print(devens.bounds)
@@ -129,6 +103,47 @@ def cost_func_2d(x):
 
 ##def deven_der(x):
 
+for i in range(5):
+    is_road_true = df.iloc[i]['is_road_truth']
+    pcl_scan[i,0,:] = scan['x']
+    pcl_scan[i,1,:] = scan['y']
+    pcl_scan[i,2,:] = scan['z']
+    pcl_coor[i,:] = df.iloc[i]['x'], df.iloc[i]['y']
+
+##print(pcl_scan)
+##print(pcl_coor)
+
+    count1 = 0
+    count2 = 0
+    road_pts = np.zeros((25000, 2))
+    for j in range(111168):
+        if is_road_true[j] == True:
+            #print("ok")
+            if count1 < 10000:
+                road_pts[count1, 0] = pcl_scan[0,0,j]
+                road_pts[count1, 1] = pcl_scan[0,1,j]
+            count1 = count1 + 1
+        else:
+            count2 = count2 + 1
+#    if pcl_scan[0,1,i] < -2.5:
+#        if count1 < 1000:
+#            road_pts[count1, 0] = pcl_scan[0,0,i]
+#            road_pts[count1, 1] = pcl_scan[0,2,i]
+#        count1 = count1 + 1
+
+#    if pcl_scan[0,1,i] < 0:
+#        count2 = count2 + 1
+    print(count1, count2)
+
+    devens_arr = np.zeros((25000,2))
+    devens_arr = road_pts
+    x0 = np.array([0.1, 0.8, 1.2])
+    res = minimize(cost_func_2d, x0, method='BFGS', options={'disp': True})
+    print(res.x)
+    devens_trans = transform_devens_2d(res.x)
+    plt.scatter(devens_trans[:,0], devens_trans[:,1], color = 'k')
+    nx.draw(G, pos=nodes2)
+    plt.show()
 
 #devens_exterior = np.asarray(devens.exterior.coords[:])
 #devens_interior = []
