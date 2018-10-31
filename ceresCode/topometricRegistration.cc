@@ -26,9 +26,9 @@ int main(int argc, char** argv){
 	const char *filename_road;
 	const char *filename_output;
 
-	filename_osm = "../data/osm_nodes_noisy.txt";
-	filename_road = "../data/road.txt";
-	filename_output = "../data/output.txt";
+	filename_osm = "/home/jatavalk/code/TopometricRegistration/ceresCode/data/osm_nodes_noisy.txt";
+	filename_road = "/home/jatavalk/code/TopometricRegistration/ceresCode/data/road.txt";
+	filename_output = "/home/jatavalk/code/TopometricRegistration/ceresCode/data/output.txt";
 
 	TopometricRegistrationProblem2D topometricRegistrationProblem;
 	if(!topometricRegistrationProblem.loadFiles(filename_osm, filename_road)){

@@ -7,6 +7,8 @@ Created on Fri Aug 10 22:50:44 2018
 
 import numpy as np
 import networkx as nx
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 #%% Load from file
@@ -20,5 +22,5 @@ G.add_edges_from(edges)
 
 #%% Plot
 nx.draw(G, pos=nodes)
-plt.show()
+plt.savefig('/home/jatavalk/code/TopometricRegistration/cache/osm.png')
 
