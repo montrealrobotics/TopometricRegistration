@@ -20,35 +20,38 @@ class opti_node(object):
 		self.osm_nodes_gt = osm_nodes_gt
 		self.osm_edges_gt = osm_edges_gt
 		self.full_scan = full_scan
+		
+		self.scan_active = np.zeros((50000, 2))
+		self.osm_nodes_active = np.zeros((50,2))
 
 		self.just_do_it()
 
-	def transform_devens_2d(x, osm_nodes_active):
+	def transform_devens_2d(self, x):
 		## This function takes in the following inputs: 
 		# - the optimized parameters: x[0] (theta), x[1] (t_x), x[2] (t_y)
 		# - Active OSM nodes (which were sampled from within 'osm_thresh' radius of scan position)
 		# And transforms these active OSM nodes using the optimized parameters.
 		# It returns the following:
 		# - transformed OSM nodes
-		osm_new = np.zeros((osm_nodes_active.shape[0], 2))
-		for lol1 in range(osm_nodes_active.shape[0]):
-			x_new = np.cos(x[0]) * osm_nodes_active[lol1,0] + np.sin(x[0]) * osm_nodes_active[lol1,1] + x[1]
-			y_new = -np.sin(x[0]) * osm_nodes_active[lol1,0] + np.cos(x[0]) * osm_nodes_active[lol1,1] + x[2]
+		osm_new = np.zeros((self.osm_nodes_active.shape[0], 2))
+		for lol1 in range(self.osm_nodes_active.shape[0]):
+			x_new = np.cos(x[0]) * self.osm_nodes_active[lol1,0] + np.sin(x[0]) * self.osm_nodes_active[lol1,1] + x[1]
+			y_new = -np.sin(x[0]) * self.osm_nodes_active[lol1,0] + np.cos(x[0]) * self.osm_nodes_active[lol1,1] + x[2]
 
 			osm_new[lol1,0] = x_new
 			osm_new[lol1,1] = y_new
 		return osm_new
 
 
-	def find_closest(x_new, y_new, scan_active):
+	def find_closest(self, x_new, y_new):
 		## This function takes in the following inputs:
 		# - (x_new, y_new). These are the transformed OSM coordinates
 		# - All the active scan points (scan points which are on the road)
 		# And outputs the following:
 		# - distance (in meters) of (x_new, y_new) to the closest scan point
 		closest = 100000.0
-		for lol2 in range(scan_active.shape[0]//100):
-			dist = np.sqrt((x_new - scan_active[lol2*100,0])**2 + (y_new - scan_active[lol2*100,1])**2)
+		for lol2 in range(self.scan_active.shape[0]//100):
+			dist = np.sqrt((x_new - self.scan_active[lol2*100,0])**2 + (y_new - self.scan_active[lol2*100,1])**2)
 			if dist == 0:
 				return dist
 			if dist < closest:
@@ -57,7 +60,7 @@ class opti_node(object):
 		return closest
 
 
-	def cost_func_2d(x):
+	def cost_func_2d(self, x):
 		## This is the function we want to optimize.
 		# The cost function has 2 parts
 		#
@@ -71,22 +74,22 @@ class opti_node(object):
 		# - The weightage given to cost2 can be changed with hyper parameter \lamda 
 		
 		cost1 = 0
-		for lol3 in range(osm_nodes_active.shape[0]):
+		for lol3 in range(self.osm_nodes_active.shape[0]):
 			dx = np.random.normal(0, 0)
 			dy = np.random.normal(0, 0)
-			x_noise = osm_nodes_active[lol3,0] + dx
-			y_noise = osm_nodes_active[lol3,1] + dy
+			x_noise = self.osm_nodes_active[lol3,0] + dx
+			y_noise = self.osm_nodes_active[lol3,1] + dy
 			x_new = np.cos(x[0]) * x_noise + np.sin(x[0]) * y_noise + x[1]
 			y_new = -np.sin(x[0]) * x_noise + np.cos(x[0]) * y_noise + x[2]
-			cost1 = cost1 + find_closest(x_new, y_new, scan_active)
+			cost1 = cost1 + self.find_closest(x_new, y_new)
 		cost2 = 0
-		for loll3 in range(osm_nodes_active.shape[0]):
-			for loll4 in range(loll3+1, osm_nodes_active.shape[0]):
-				cost2 = cost2 + np.sqrt((osm_nodes_active[loll3,0] - osm_nodes_active[loll4,0])**2 + (osm_nodes_active[loll3,1] - osm_nodes_active[loll4,1])**2)
-		total_cost = cost1 - 0.01 * cost2
+		for loll3 in range(self.osm_nodes_active.shape[0]):
+			for loll4 in range(loll3+1, self.osm_nodes_active.shape[0]):
+				cost2 = cost2 + np.sqrt((self.osm_nodes_active[loll3,0] - self.osm_nodes_active[loll4,0])**2 + (self.osm_nodes_active[loll3,1] - self.osm_nodes_active[loll4,1])**2)
+		total_cost = cost1 - self.lamda * cost2
 		return total_cost
 
-	def find_error(osm1, osm2):
+	def find_error(self, osm1, osm2):
 		## This function is not used in optimization. This is only a post-optimization check
 		# Typically, osm2 is the groundtruth OSM nodes
 		# - We want to measure the shortest distance between optimized or unoptimized OSM nodes (depending on what we send as input)
@@ -110,35 +113,36 @@ class opti_node(object):
 		return error
 
 
-	def just_do_it():
+	def just_do_it(self):
 		for scan_idx in range(100):
-			scan = full_scan.iloc[scan_idx]['scan']
-			road_mask = full_scan.iloc[scan_idx]['is_road_truth']
+			scan = self.full_scan.iloc[scan_idx]['scan']
+			road_mask = self.full_scan.iloc[scan_idx]['is_road_truth']
 			road_mask = np.where(road_mask)
 
 			# Extract OSM nodes that are within the distance threshold
-			pos_x = full_scan.iloc[scan_idx]['x']
-			pos_y = full_scan.iloc[scan_idx]['y']
-			pos_theta = full_scan.iloc[scan_idx]['theta']
+			pos_x = self.full_scan.iloc[scan_idx]['x']
+			pos_y = self.full_scan.iloc[scan_idx]['y']
+			pos_theta = self.full_scan.iloc[scan_idx]['theta']
 			
 			osm_x, osm_y = [], []
-			for eth in range(osm_nodes.shape[0]):
-				if np.sqrt((osm_nodes[eth,0] - pos_x)**2 + (osm_nodes[eth,1] - pos_y)**2) < self.osm_thresh:
-					osm_x.append(osm_nodes[eth,0])
-					osm_y.append(osm_nodes[eth,1])
+			for eth in range(self.osm_nodes.shape[0]):
+				if np.sqrt((self.osm_nodes[eth,0] - pos_x)**2 + (self.osm_nodes[eth,1] - pos_y)**2) < self.osm_thresh:
+					osm_x.append(self.osm_nodes[eth,0])
+					osm_y.append(self.osm_nodes[eth,1])
 			osm_arr_x = np.asarray(osm_x)
 			osm_arr_y = np.asarray(osm_y)
 			osm_nodes_active = np.column_stack((osm_arr_x, osm_arr_y))
 
 			osm_gt_x, osm_gt_y = [], []
-			for eth in range(osm_nodes_gt.shape[0]):
-				if np.sqrt((osm_nodes_gt[eth,0] - pos_x)**2 + (osm_nodes_gt[eth,1] - pos_y)**2) < self.osm_thresh:
-					osm_gt_x.append(osm_nodes_gt[eth,0])
-					osm_gt_y.append(osm_nodes_gt[eth,1])
+			for eth in range(self.osm_nodes_gt.shape[0]):
+				if np.sqrt((self.osm_nodes_gt[eth,0] - pos_x)**2 + (self.osm_nodes_gt[eth,1] - pos_y)**2) < self.osm_thresh:
+					osm_gt_x.append(self.osm_nodes_gt[eth,0])
+					osm_gt_y.append(self.osm_nodes_gt[eth,1])
 			osm_arr_gt_x = np.asarray(osm_gt_x)
 			osm_arr_gt_y = np.asarray(osm_gt_y)
 			osm_nodes_gt_active = np.column_stack((osm_arr_gt_x, osm_arr_gt_y))
 				 
+			
 			# Extract LiDAR scan points that correspond to road
 			scan_active = scan[road_mask]
 			scan_active = np.asarray([[item[0] for item in scan_active], [item[1] for item in scan_active]]).T
@@ -147,17 +151,20 @@ class opti_node(object):
 				scan_active[btc,0] = scan_active_copy[btc,0] * np.cos(pos_theta) + scan_active_copy[btc,1] * np.sin(pos_theta) + pos_x
 				scan_active[btc,1] = -scan_active_copy[btc,1] * np.sin(pos_theta) + scan_active_copy[btc,1] * np.cos(pos_theta) + pos_y
 				
+			self.osm_nodes_active = osm_nodes_active
+			self.scan_active = scan_active
+
 			# Do Optimization
 			x0 = np.array([0.1, 0.8, 1.2])
 			if self.opti_method == 'powell':
-				res = minimize(cost_func_2d, x0, method='powell', options={'xtol':1e-8, 'disp':True})
+				res = minimize(self.cost_func_2d, x0, method='powell', options={'xtol':1e-8, 'disp':True})
 			elif self.opti_method == 'nelder-mead':
 				res = minimize(cost_func_2d, x0, method='nelder-mead', options={'xtol':1e-8, 'disp':True})
 			#res_bounded = minimize(cost_func_2d, x0, method='trust-constr', options={'verbose':1}, bounds=bounds)
 			#print(res.x)
 			
 			# Transform the OSM nodes based on optimized theta, x, y values
-			osm_trans = transform_devens_2d(res.x)
+			osm_trans = self.transform_devens_2d(res.x)
 			
 			print(osm_trans.shape)
 			#Plotting the results
@@ -166,24 +173,24 @@ class opti_node(object):
 			# nx.draw(G, pos=osm_nodes2)
 			plt.show()
 			# plt.pause(1)
-			plt.savefig('./devensData/osm_trans'+str(scan_idx)+'.png')
+			plt.savefig('../devensData/osm_trans'+str(scan_idx)+'.png')
 			plt.gcf().clear()
 			plt.scatter(osm_nodes_gt_active[:,0], osm_nodes_gt_active[:,1])
 			plt.show()
-			plt.savefig('./devensData/osm_gt'+str(scan_idx)+'.png')
+			plt.savefig('../devensData/osm_gt'+str(scan_idx)+'.png')
 			plt.gcf().clear()
 			plt.scatter(scan_active[:,0], scan_active[:,1])
 			plt.show()
-			plt.savefig('./devensData/scan'+str(scan_idx)+'.png')
+			plt.savefig('../devensData/scan'+str(scan_idx)+'.png')
 			plt.gcf().clear()
 			plt.scatter(osm_nodes_gt_active[:,0], osm_nodes_gt_active[:,1])
 			plt.scatter(osm_nodes_active[:,0], osm_nodes_active[:,1], color='k')
 			plt.scatter(osm_trans[:,0], osm_trans[:,1])
 			plt.scatter(scan_active[:,0], scan_active[:,1])
-			plt.savefig('./devensData/combined'+str(scan_idx)+'.png')
+			plt.savefig('../devensData/combined'+str(scan_idx)+'.png')
 			plt.gcf().clear()
-			ori_error = find_error(osm_nodes_active, osm_nodes_gt_active)
-			opti_error = find_error(osm_trans, osm_nodes_gt_active)
+			ori_error = self.find_error(osm_nodes_active, osm_nodes_gt_active)
+			opti_error = self.find_error(osm_trans, osm_nodes_gt_active)
 			# print(pos_x, pos_y)
 			# print(osm_nodes_active)
 			# print(osm_trans)
