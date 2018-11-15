@@ -33,13 +33,10 @@ class opti_node(object):
 		# And transforms these active OSM nodes using the optimized parameters.
 		# It returns the following:
 		# - transformed OSM nodes
-		osm_new = np.zeros((self.osm_nodes_active.shape[0], 2))
-		for lol1 in range(self.osm_nodes_active.shape[0]):
-			x_new = np.cos(x[0]) * self.osm_nodes_active[lol1,0] + np.sin(x[0]) * self.osm_nodes_active[lol1,1] + x[1]
-			y_new = -np.sin(x[0]) * self.osm_nodes_active[lol1,0] + np.cos(x[0]) * self.osm_nodes_active[lol1,1] + x[2]
-
-			osm_new[lol1,0] = x_new
-			osm_new[lol1,1] = y_new
+		rotation_mat = [[np.cos(x[0]), np.sin(x[0])],
+						 [-np.sin(x[0]), np.cos(x[0])]]
+		trans_mat = [[x[1], x[2]]]
+		osm_new = np.matmul(self.osm_nodes_active, rotation_mat) + trans_mat
 		return osm_new
 
 
@@ -150,9 +147,6 @@ class opti_node(object):
 			rotation_mat = [[np.cos(pos_theta), np.sin(pos_theta)],
 						 [-np.sin(pos_theta), np.cos(pos_theta)]]
 			trans_mat = [[pos_x, pos_y]]
-			# for btc in range(scan_active.shape[0]):
-			# 	scan_active[btc,0] = scan_active_copy[btc,0] * np.cos(pos_theta) + scan_active_copy[btc,1] * np.sin(pos_theta) + pos_x
-			# 	scan_active[btc,1] = -scan_active_copy[btc,1] * np.sin(pos_theta) + scan_active_copy[btc,1] * np.cos(pos_theta) + pos_y
 			scan_active = np.matmul(scan_active_copy, rotation_mat) + trans_mat 
 
 			self.osm_nodes_active = osm_nodes_active
