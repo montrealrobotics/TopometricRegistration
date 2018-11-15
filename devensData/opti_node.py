@@ -158,19 +158,14 @@ class opti_node(object):
 				res = minimize(self.cost_func_2d, x0, method='powell', options={'xtol':1e-8, 'disp':True})
 			elif self.opti_method == 'nelder-mead':
 				res = minimize(self.cost_func_2d, x0, method='nelder-mead', options={'xtol':1e-8, 'disp':True})
-			#res_bounded = minimize(cost_func_2d, x0, method='trust-constr', options={'verbose':1}, bounds=bounds)
-			#print(res.x)
 			
+
 			# Transform the OSM nodes based on optimized theta, x, y values
 			osm_trans = self.transform_devens_2d(res.x)
 			
-			print(osm_trans.shape)
 			#Plotting the results
-			# fig = plt.figure()
 			plt.scatter(osm_trans[:,0], osm_trans[:,1], color='k')
-			# nx.draw(G, pos=osm_nodes2)
 			plt.show()
-			# plt.pause(1)
 			plt.savefig('../devensData/osm_trans'+str(scan_idx)+'.png')
 			plt.gcf().clear()
 			plt.scatter(osm_nodes_gt_active[:,0], osm_nodes_gt_active[:,1])
@@ -189,8 +184,4 @@ class opti_node(object):
 			plt.gcf().clear()
 			ori_error = self.find_error(osm_nodes_active, osm_nodes_gt_active)
 			opti_error = self.find_error(osm_trans, osm_nodes_gt_active)
-			# print(pos_x, pos_y)
-			# print(osm_nodes_active)
-			# print(osm_trans)
-			# print(osm_nodes_gt_active)
 			print(ori_error, opti_error)
