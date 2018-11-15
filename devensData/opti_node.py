@@ -147,10 +147,14 @@ class opti_node(object):
 			scan_active = scan[road_mask]
 			scan_active = np.asarray([[item[0] for item in scan_active], [item[1] for item in scan_active]]).T
 			scan_active_copy = copy.deepcopy(scan_active)
-			for btc in range(scan_active.shape[0]):
-				scan_active[btc,0] = scan_active_copy[btc,0] * np.cos(pos_theta) + scan_active_copy[btc,1] * np.sin(pos_theta) + pos_x
-				scan_active[btc,1] = -scan_active_copy[btc,1] * np.sin(pos_theta) + scan_active_copy[btc,1] * np.cos(pos_theta) + pos_y
-				
+			rotation_mat = [[np.cos(pos_theta), np.sin(pos_theta)],
+						 [-np.sin(pos_theta), np.cos(pos_theta)]]
+			trans_mat = [[pos_x, pos_y]]
+			# for btc in range(scan_active.shape[0]):
+			# 	scan_active[btc,0] = scan_active_copy[btc,0] * np.cos(pos_theta) + scan_active_copy[btc,1] * np.sin(pos_theta) + pos_x
+			# 	scan_active[btc,1] = -scan_active_copy[btc,1] * np.sin(pos_theta) + scan_active_copy[btc,1] * np.cos(pos_theta) + pos_y
+			scan_active = np.matmul(scan_active_copy, rotation_mat) + trans_mat 
+
 			self.osm_nodes_active = osm_nodes_active
 			self.scan_active = scan_active
 
@@ -159,7 +163,7 @@ class opti_node(object):
 			if self.opti_method == 'powell':
 				res = minimize(self.cost_func_2d, x0, method='powell', options={'xtol':1e-8, 'disp':True})
 			elif self.opti_method == 'nelder-mead':
-				res = minimize(cost_func_2d, x0, method='nelder-mead', options={'xtol':1e-8, 'disp':True})
+				res = minimize(self.cost_func_2d, x0, method='nelder-mead', options={'xtol':1e-8, 'disp':True})
 			#res_bounded = minimize(cost_func_2d, x0, method='trust-constr', options={'verbose':1}, bounds=bounds)
 			#print(res.x)
 			
