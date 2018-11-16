@@ -8,13 +8,16 @@ import networkx as nx
 import pandas as pd
 from scipy.optimize import minimize
 import copy
+import time
+from datetime import datetime
 
 class opti_node(object):
-	def __init__(self, lamda, opti_method, osm_thresh, osm_nodes, osm_edges, osm_nodes_gt, osm_edges_gt, full_scan):
+	def __init__(self, variance, lamda, opti_method, osm_thresh, osm_nodes, osm_edges, osm_nodes_gt, osm_edges_gt, full_scan):
 
 		self.lamda = lamda
 		self.opti_method = opti_method
 		self.osm_thresh = osm_thresh
+		self.variance = variance
 		self.osm_nodes = osm_nodes
 		self.osm_edges = osm_edges
 		self.osm_nodes_gt = osm_nodes_gt
@@ -23,6 +26,8 @@ class opti_node(object):
 		
 		self.scan_active = np.zeros((50000, 2))
 		self.osm_nodes_active = np.zeros((50,2))
+		# current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+		self.start_time = time.time()
 
 		self.just_do_it()
 
@@ -72,12 +77,8 @@ class opti_node(object):
 		
 		cost1 = 0
 		for lol3 in range(self.osm_nodes_active.shape[0]):
-			dx = np.random.normal(0, 0)
-			dy = np.random.normal(0, 0)
-			x_noise = self.osm_nodes_active[lol3,0] + dx
-			y_noise = self.osm_nodes_active[lol3,1] + dy
-			x_new = np.cos(x[0]) * x_noise + np.sin(x[0]) * y_noise + x[1]
-			y_new = -np.sin(x[0]) * x_noise + np.cos(x[0]) * y_noise + x[2]
+			x_new = np.cos(x[0]) * self.osm_nodes_active[lol3,0] + np.sin(x[0]) * self.osm_nodes_active[lol3,1] + x[1]
+			y_new = -np.sin(x[0]) * self.osm_nodes_active[lol3,0] + np.cos(x[0]) * self.osm_nodes_active[lol3,1] + x[2]
 			cost1 = cost1 + self.find_closest(x_new, y_new)
 		cost2 = 0
 		for loll3 in range(self.osm_nodes_active.shape[0]):
@@ -112,7 +113,7 @@ class opti_node(object):
 
 	def just_do_it(self):
 		for scan_idx in range(100):
-			scan = self.full_scan.iloc[scan_idx]['scan']
+			scan = self.full_scan.iloc[scan_idx]['scan_utm']
 			road_mask = self.full_scan.iloc[scan_idx]['is_road_truth']
 			road_mask = np.where(road_mask)
 
@@ -129,6 +130,8 @@ class opti_node(object):
 			osm_arr_x = np.asarray(osm_x)
 			osm_arr_y = np.asarray(osm_y)
 			osm_nodes_active = np.column_stack((osm_arr_x, osm_arr_y))
+			rand_noise = np.random.normal(0, self.variance, (osm_nodes_active.shape[0], 2))
+			osm_nodes_active = osm_nodes_active + rand_noise
 
 			osm_gt_x, osm_gt_y = [], []
 			for eth in range(self.osm_nodes_gt.shape[0]):
@@ -143,11 +146,11 @@ class opti_node(object):
 			# Extract LiDAR scan points that correspond to road
 			scan_active = scan[road_mask]
 			scan_active = np.asarray([[item[0] for item in scan_active], [item[1] for item in scan_active]]).T
-			scan_active_copy = copy.deepcopy(scan_active)
-			rotation_mat = [[np.cos(pos_theta), np.sin(pos_theta)],
-						 [-np.sin(pos_theta), np.cos(pos_theta)]]
-			trans_mat = [[pos_x, pos_y]]
-			scan_active = np.matmul(scan_active_copy, rotation_mat) + trans_mat 
+			# scan_active_copy = copy.deepcopy(scan_active)
+			# rotation_mat = [[np.cos(pos_theta), np.sin(pos_theta)],
+			# 			 [-np.sin(pos_theta), np.cos(pos_theta)]]
+			# trans_mat = [[pos_x, pos_y]]
+			# scan_active = np.matmul(scan_active_copy, rotation_mat) + trans_mat 
 
 			self.osm_nodes_active = osm_nodes_active
 			self.scan_active = scan_active
@@ -185,3 +188,5 @@ class opti_node(object):
 			ori_error = self.find_error(osm_nodes_active, osm_nodes_gt_active)
 			opti_error = self.find_error(osm_trans, osm_nodes_gt_active)
 			print(ori_error, opti_error)
+			print(time.time() - self.start_time)
+		print(time.time() - self.start_time)

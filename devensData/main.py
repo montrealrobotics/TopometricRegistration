@@ -26,6 +26,6 @@ def main():
 	osm_edges_gt = np.genfromtxt(osm_edges_gt_file, delimiter = ',', dtype = int)
 	full_scan = pd.read_pickle(full_scan_file)
 
-	opti_node(args.lamda, args.opti_method, args.osm_thresh, osm_nodes, osm_edges, osm_nodes_gt, osm_edges_gt, full_scan)
+	opti_node(args.variance, args.lamda, args.opti_method, args.osm_thresh, osm_nodes, osm_edges, osm_nodes_gt, osm_edges_gt, full_scan)
 
 main()
