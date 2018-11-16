@@ -155,7 +155,7 @@ class opti_node(object):
 			plt.scatter(osm_nodes_gt_active[:,0], osm_nodes_gt_active[:,1])
 			plt.scatter(osm_nodes_active[:,0], osm_nodes_active[:,1], color='k')
 			plt.scatter(osm_trans[:,0], osm_trans[:,1])
-			plt.scatter(scan_active[:,0], scan_active[:,1], alpha=0.5)
+			plt.scatter(scan_active[:,0], scan_active[:,1], alpha=0.01)
 			plt.savefig('../devensData/combined'+str(scan_idx)+'.png')
 			plt.gcf().clear()
 			ori_error = self.find_error(osm_nodes_active, osm_nodes_gt_active)
