@@ -103,32 +103,22 @@ class opti_node(object):
 			# Extract OSM nodes that are within the distance threshold
 			pos_x = self.full_scan.iloc[scan_idx]['x']
 			pos_y = self.full_scan.iloc[scan_idx]['y']
+			pose = [[pos_x, pos_y]]
 			pos_theta = self.full_scan.iloc[scan_idx]['theta']
-			
-			osm_x, osm_y = [], []
-			for eth in range(self.osm_nodes.shape[0]):
-				if np.sqrt((self.osm_nodes[eth,0] - pos_x)**2 + (self.osm_nodes[eth,1] - pos_y)**2) < self.osm_thresh:
-					osm_x.append(self.osm_nodes[eth,0])
-					osm_y.append(self.osm_nodes[eth,1])
-			osm_arr_x = np.asarray(osm_x)
-			osm_arr_y = np.asarray(osm_y)
-			osm_nodes_active = np.column_stack((osm_arr_x, osm_arr_y))
+
+			flags = (cdist(self.osm_nodes, pose, 'euclidean'))[:,0] < self.osm_thresh
+			osm_nodes_active = self.osm_nodes[flags]
 			rand_noise = np.random.normal(0, self.variance, (osm_nodes_active.shape[0], 2))
 			osm_nodes_active = osm_nodes_active + rand_noise
 
-			osm_gt_x, osm_gt_y = [], []
-			for eth in range(self.osm_nodes_gt.shape[0]):
-				if np.sqrt((self.osm_nodes_gt[eth,0] - pos_x)**2 + (self.osm_nodes_gt[eth,1] - pos_y)**2) < self.osm_thresh:
-					osm_gt_x.append(self.osm_nodes_gt[eth,0])
-					osm_gt_y.append(self.osm_nodes_gt[eth,1])
-			osm_arr_gt_x = np.asarray(osm_gt_x)
-			osm_arr_gt_y = np.asarray(osm_gt_y)
-			osm_nodes_gt_active = np.column_stack((osm_arr_gt_x, osm_arr_gt_y))
-				 
+			flags = (cdist(self.osm_nodes_gt, pose, 'euclidean'))[:,0] < self.osm_thresh
+			osm_nodes_gt_active = self.osm_nodes_gt[flags]
 			
 			# Extract LiDAR scan points that correspond to road
 			scan_active = scan[road_mask]
 			scan_active = np.asarray([[item[0] for item in scan_active], [item[1] for item in scan_active]]).T
+			
+			## Uncomment the following if the scan was given from sensor's frame and you want to convert to UTM frame
 			# scan_active_copy = copy.deepcopy(scan_active)
 			# rotation_mat = [[np.cos(pos_theta), np.sin(pos_theta)],
 			# 			 [-np.sin(pos_theta), np.cos(pos_theta)]]
@@ -149,7 +139,7 @@ class opti_node(object):
 			# Transform the OSM nodes based on optimized theta, x, y values
 			osm_trans = self.transform_devens_2d(res.x)
 			
-			#Plotting the results
+			# #Plotting the results
 			plt.scatter(osm_trans[:,0], osm_trans[:,1], color='k')
 			plt.show()
 			plt.savefig('../devensData/osm_trans'+str(scan_idx)+'.png')
@@ -158,14 +148,14 @@ class opti_node(object):
 			plt.show()
 			plt.savefig('../devensData/osm_gt'+str(scan_idx)+'.png')
 			plt.gcf().clear()
-			plt.scatter(scan_active[:,0], scan_active[:,1])
+			plt.scatter(scan_active[:,0], scan_active[:,1], alpha=0.1)
 			plt.show()
 			plt.savefig('../devensData/scan'+str(scan_idx)+'.png')
 			plt.gcf().clear()
 			plt.scatter(osm_nodes_gt_active[:,0], osm_nodes_gt_active[:,1])
 			plt.scatter(osm_nodes_active[:,0], osm_nodes_active[:,1], color='k')
 			plt.scatter(osm_trans[:,0], osm_trans[:,1])
-			plt.scatter(scan_active[:,0], scan_active[:,1])
+			plt.scatter(scan_active[:,0], scan_active[:,1], alpha=0.5)
 			plt.savefig('../devensData/combined'+str(scan_idx)+'.png')
 			plt.gcf().clear()
 			ori_error = self.find_error(osm_nodes_active, osm_nodes_gt_active)
