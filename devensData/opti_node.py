@@ -7,6 +7,7 @@ import numpy as np
 import networkx as nx
 import pandas as pd
 from scipy.optimize import minimize
+from scipy.spatial.distance import cdist
 import copy
 import time
 from datetime import datetime
@@ -45,23 +46,6 @@ class opti_node(object):
 		return osm_new
 
 
-	def find_closest(self, x_new, y_new):
-		## This function takes in the following inputs:
-		# - (x_new, y_new). These are the transformed OSM coordinates
-		# - All the active scan points (scan points which are on the road)
-		# And outputs the following:
-		# - distance (in meters) of (x_new, y_new) to the closest scan point
-		closest = 100000.0
-		for lol2 in range(self.scan_active.shape[0]//100):
-			dist = np.sqrt((x_new - self.scan_active[lol2*100,0])**2 + (y_new - self.scan_active[lol2*100,1])**2)
-			if dist == 0:
-				return dist
-			if dist < closest:
-				closest = dist
-
-		return closest
-
-
 	def cost_func_2d(self, x):
 		## This is the function we want to optimize.
 		# The cost function has 2 parts
@@ -75,15 +59,14 @@ class opti_node(object):
 		# - We want this cost2 to be high. Hence, the negative sign
 		# - The weightage given to cost2 can be changed with hyper parameter \lamda 
 		
-		cost1 = 0
-		for lol3 in range(self.osm_nodes_active.shape[0]):
-			x_new = np.cos(x[0]) * self.osm_nodes_active[lol3,0] + np.sin(x[0]) * self.osm_nodes_active[lol3,1] + x[1]
-			y_new = -np.sin(x[0]) * self.osm_nodes_active[lol3,0] + np.cos(x[0]) * self.osm_nodes_active[lol3,1] + x[2]
-			cost1 = cost1 + self.find_closest(x_new, y_new)
-		cost2 = 0
-		for loll3 in range(self.osm_nodes_active.shape[0]):
-			for loll4 in range(loll3+1, self.osm_nodes_active.shape[0]):
-				cost2 = cost2 + np.sqrt((self.osm_nodes_active[loll3,0] - self.osm_nodes_active[loll4,0])**2 + (self.osm_nodes_active[loll3,1] - self.osm_nodes_active[loll4,1])**2)
+		rotation_mat = [[np.cos(x[0]), np.sin(x[0])],
+						 [-np.sin(x[0]), np.cos(x[0])]]
+		trans_mat = [[x[1], x[2]]]
+		osm_new = np.matmul(self.osm_nodes_active, rotation_mat) + trans_mat
+		
+		cost1 = np.sum((cdist(osm_new, self.scan_active, 'euclidean')).min(axis=1)) 
+		cost2 = 0.5 * np.sum((cdist(osm_new, osm_new, 'euclidean')))
+		
 		total_cost = cost1 - self.lamda * cost2
 		return total_cost
 
@@ -91,7 +74,7 @@ class opti_node(object):
 		## This function is not used in optimization. This is only a post-optimization check
 		# Typically, osm2 is the groundtruth OSM nodes
 		# - We want to measure the shortest distance between optimized or unoptimized OSM nodes (depending on what we send as input)
-		# and ground truth OSM nodes. 
+		# vs ground truth OSM nodes. 
 		masks = np.zeros(osm2.shape[0])
 		error = 0
 		for lol4 in range(osm1.shape[0]):
@@ -112,7 +95,7 @@ class opti_node(object):
 
 
 	def just_do_it(self):
-		for scan_idx in range(100):
+		for scan_idx in range(100): # Just taking in the first 100 scans
 			scan = self.full_scan.iloc[scan_idx]['scan_utm']
 			road_mask = self.full_scan.iloc[scan_idx]['is_road_truth']
 			road_mask = np.where(road_mask)
