@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(icp-ceres)
 
-set(Ceres_DIR "/home/krishna/code/ceres-solver/build/lib")
+set(Ceres_DIR "/home/jatavalk/libs/ceres-solver/build/lib/cmake/Ceres")
 message("-- Check for Ceres solver")
 find_package(Ceres REQUIRED)
 if(CERES_FOUND)
